@@ -1,4 +1,4 @@
-activator-akka-scala-seed
+Wanari Scheduler
 =========================
 
-A minimal seed template for an Akka with Scala build 
+It's a work in progress library for akka actor scheduling.
