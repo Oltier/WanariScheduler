@@ -1,12 +1,11 @@
 package com.wanari.scheduler
 
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Cancellable}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
-
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormatter
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration.FiniteDuration
@@ -43,7 +42,7 @@ class SchedulerActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
     }
 
     "getNextRunDuration daily" in {
-      val time = ZonedDateTime.parse("2016-11-08T10:14:00.000Z", DateTimeFormatter.ISO_DATE_TIME)
+      val time = DateTime.parse("2016-11-08T10:14:00.000Z")
       val cron = "0 0 12 1/1 * ? *" // Every days 12:00:00 -> next 2016-11-08T12:00:00.000Z
       val ret: FiniteDuration = SchedulerActor.getNextRunDuration(cron, time)
       val exp: FiniteDuration = FiniteDuration(106, TimeUnit.MINUTES)
@@ -51,7 +50,7 @@ class SchedulerActorSpec(_system: ActorSystem) extends TestKit(_system) with Imp
     }
 
     "getNextRunDuration 5 mins" in {
-      val time = ZonedDateTime.parse("2016-11-08T10:14:00.000Z", DateTimeFormatter.ISO_DATE_TIME)
+      val time = DateTime.parse("2016-11-08T10:14:00.000Z")
       val cron = "0 0/5 * 1/1 * ? *" // Every 5. min -> next 2016-11-08T10:15:00.000Z
       val ret: FiniteDuration = SchedulerActor.getNextRunDuration(cron, time)
       val exp: FiniteDuration = FiniteDuration(1, TimeUnit.MINUTES)

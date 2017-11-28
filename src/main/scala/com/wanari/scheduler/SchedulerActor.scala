@@ -1,6 +1,5 @@
 package com.wanari.scheduler
 
-import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef, Cancellable}
@@ -9,6 +8,7 @@ import com.cronutils.model.definition.{CronDefinition, CronDefinitionBuilder}
 import com.cronutils.model.time.ExecutionTime
 import com.cronutils.parser.CronParser
 import com.wanari.scheduler.SchedulerMessages._
+import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -61,7 +61,7 @@ class SchedulerActor(
       dispatcher, TaskListRequest)(context.system.dispatcher, self)
 
     log.debug("Schedule all task: " + innerTasks.keySet.mkString(", "))
-    innerTasks.values.foreach(scheduleTask(_, ZonedDateTime.now()))
+    innerTasks.values.foreach(scheduleTask(_, DateTime.now.withZone(DateTimeZone.forID("Europe/Budapest"))))
   }
 
   def stopScheduledRunning(): Unit = {
@@ -104,14 +104,14 @@ class SchedulerActor(
     log.debug("Task finished. TaskID=[" + x.taskId + "]")
     removeFromRunningTasks(x.taskId)
     dispatcher ! x
-    scheduleTaskProcess(x.taskId, ZonedDateTime.now)
+    scheduleTaskProcess(x.taskId, DateTime.now.withZone(DateTimeZone.forID("Europe/Budapest")).withZone(DateTimeZone.forID("Europe/Budapest")))
   }
 
   def taskFailedProcess(x: TaskFailed): Unit = {
     log.debug("Task failed. TaskID=[" + x.taskId + "]")
     removeFromRunningTasks(x.taskId)
     dispatcher ! x
-    scheduleTaskProcess(x.taskId, ZonedDateTime.now)
+    scheduleTaskProcess(x.taskId, DateTime.now.withZone(DateTimeZone.forID("Europe/Budapest")))
   }
 
   def scheduledSendingProcess(taskId: String): Unit = {
@@ -122,16 +122,16 @@ class SchedulerActor(
     }
   }
 
-  def scheduleTaskProcess(taskId: String, time: ZonedDateTime): Unit =
+  def scheduleTaskProcess(taskId: String, time: DateTime): Unit =
     findTaskById(taskId) match {
       case Some(task) if task.isEnabled() && schedulerEnabled => scheduleTask(task, time)
       case Some(task) if !(task.isEnabled() && schedulerEnabled) => log.debug("ScheduleTaskProcess not scheduled because task is disabled. TaskID=[" + taskId + "]")
       case None => log.debug("ScheduleTaskProcess not found task. TaskID=[" + taskId + "]")
     }
 
-  def scheduleTask(task: Task, time: ZonedDateTime): Unit = {
+  def scheduleTask(task: Task, time: DateTime): Unit = {
     println(task)
-    val delay = SchedulerActor.getNextRunDuration(task.getCron(), time)
+    val delay = SchedulerActor.getNextRunDuration(task.getCron(), time.withZone(DateTimeZone.forID("Europe/Budapest")))
     if (delay == null) log.info("ScheduleTask failed. Wrong cron format. TaskID=[" + task.getId() + "]")
     else {
       val scheduledMessage = context.system.scheduler.scheduleOnce(delay)(scheduledSendingProcess(task.getId()))(context.system.dispatcher)
@@ -153,14 +153,14 @@ class SchedulerActor(
 
   def updateOrSaveTaskProcess(task: Task): Unit = {
     log.debug("UpdateOrSave task: " + SchedulerActor.taskToString(task))
-    val time = ZonedDateTime.now
+    val time = DateTime.now.withZone(DateTimeZone.forID("Europe/Budapest"))
     cancelScheduledTaskMessage(task.getId())
     if (!isValidCron(task.getCron())) error("Wrong cron format. TaskID=[" + task.getId() + "]")
     updateOrSaveTask(task)
     scheduleTaskProcess(task.getId(), time)
   }
 
-  def isValidCron(cron: String): Boolean = SchedulerActor.getNextRunDuration(cron, ZonedDateTime.now()) != null
+  def isValidCron(cron: String): Boolean = SchedulerActor.getNextRunDuration(cron, DateTime.now.withZone(DateTimeZone.forID("Europe/Budapest"))) != null
 
   def updateOrSaveTask(task: Task): Unit = {
     findTaskById(task.getId()) match {
@@ -242,13 +242,13 @@ object SchedulerActor {
     })
   }
 
-  def getNextRunDuration(cron: String, time: ZonedDateTime): FiniteDuration = {
+  def getNextRunDuration(cron: String, time: DateTime): FiniteDuration = {
     try {
       val cronDef: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
       val parser: CronParser = new CronParser(cronDef)
       val executionTime: ExecutionTime = ExecutionTime.forCron(parser.parse(cron))
-      println(s"Cron: $cron \tcurrent time: $time \tNext executionTime: ${executionTime.nextExecution(time)}")
-      val duration = executionTime.timeToNextExecution(time)
+      println(s"Cron: $cron \tcurrent time: $time \tNext executionTime: ${executionTime.nextExecution(time.toGregorianCalendar.toZonedDateTime)}")
+      val duration = executionTime.timeToNextExecution(time.toGregorianCalendar.toZonedDateTime)
       FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS)
     } catch {
       case _: Throwable => null

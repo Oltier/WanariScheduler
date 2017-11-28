@@ -8,5 +8,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.3.16",
   "com.typesafe.akka" %% "akka-testkit" % "2.3.16" % "test",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "com.cronutils" % "cron-utils" % "5.0.5"
+  "com.cronutils" % "cron-utils" % "5.0.5",
+  "joda-time" % "joda-time" % "2.9.9"
 )
