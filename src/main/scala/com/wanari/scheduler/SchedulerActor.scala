@@ -130,6 +130,7 @@ class SchedulerActor(
     }
 
   def scheduleTask(task: Task, time: ZonedDateTime): Unit = {
+    println(task)
     val delay = SchedulerActor.getNextRunDuration(task.getCron(), time)
     if (delay == null) log.info("ScheduleTask failed. Wrong cron format. TaskID=[" + task.getId() + "]")
     else {
@@ -246,6 +247,7 @@ object SchedulerActor {
       val cronDef: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
       val parser: CronParser = new CronParser(cronDef)
       val executionTime: ExecutionTime = ExecutionTime.forCron(parser.parse(cron))
+      println(s"Cron: $cron \tcurrent time: $time \tNext executionTime: ${executionTime.nextExecution(time)}")
       val duration = executionTime.timeToNextExecution(time)
       FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS)
     } catch {
